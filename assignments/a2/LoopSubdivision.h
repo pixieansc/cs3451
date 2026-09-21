@@ -29,7 +29,13 @@ inline void SortEdgeVertices(Edge &edge)
 inline int FindTheOtherVertex(const Triangle &tri, int v0, int v1) 
 {
     /* your implementation for 2.(1) starts */	
-
+	if (tri[0] != v0 && tri[0] != v1) {
+		return tri[0];
+	} else if (tri[1] != v0 && tri[1] != v1) {
+		return tri[1];
+	} else if (tri[2] != v0 && tri[2] != v1) {
+		return tri[2];
+	}
 
 	/* your implementation for 2.(1) ends */
 		
@@ -45,8 +51,7 @@ inline Vertex SmoothOddVtx(const std::vector<Vertex> &old_vtx, const int p0, con
 	Vertex smoothed_odd_vtx = Vertex(0.0,0.0,0.0);
 
     /* your implementation for 2.(2) starts */	
-
-
+	smoothed_odd_vtx = 0.375 * (old_vtx[p0] + old_vtx[p1]) + 0.125 * (old_vtx[p2] + old_vtx[p3]);
     /* your implementation for 2.(2) ends */	
 	
 	return smoothed_odd_vtx;
@@ -62,7 +67,14 @@ inline Vertex SmoothEvenVtx(const std::vector<Vertex> &old_vtx, int v, const std
 	Vertex smoothed_even_vtx = Vertex(0.0,0.0,0.0);
 
     /* your implementation for 3.(1) starts */	
+	int num = nbs.size();
+	float beta = num > 3 ? 3.0/(8.0 * num) : 3.0/16.0;
 
+	smoothed_even_vtx = (1 - beta * num) * old_vtx[v];
+
+	for (auto &iter : nbs) {
+		smoothed_even_vtx += beta * old_vtx[iter];
+	}
 
     /* your implementation for 3.(1) ends */	
 
@@ -88,7 +100,7 @@ inline void LoopSubdivision(TriangleMesh<3> &mesh)
 	// Step 1: Add new vertices and update triangles 
 	// You have two tasks for this step: 
 	// (1) add a new vertex to new_vtx for each edge on the old mesh; 
-	// (2) add four triangles ot new_tri for each triangle on the old mesh.
+	// (2) add four triangles to new_tri for each triangle on the old mesh.
 	// For (1), you will add a new vertex (odd vertex) to the array of new_vtx for each edge in the old mesh. 
 	// The new vertex's position is the mid-point of the edge. The new vertex's index in the index of this vertex in new_vtx array. 
 	// For (2), you will add four sub-triangles to the array of new_tri for each triangle in the old mesh.
@@ -106,7 +118,7 @@ inline void LoopSubdivision(TriangleMesh<3> &mesh)
 			SortEdgeVertices(edge);					// make sure the two vertex indices are sorted before using them as a map key
 			
 			Vertex new_vtx_pos;						// the new vertex position you want to calculate 	
-			int new_vtx_idx=-1;						// the new vertex index you want to calculate (default value -1)
+			int new_vtx_idx = -1;						// the new vertex index you want to calculate (default value -1)
 
 			// Step 1.(1): check if this edge has already been processed in previous iterations
 			// if not (i.e., the edge is not in the edge_vtx_map), implement the following four steps:
@@ -118,7 +130,10 @@ inline void LoopSubdivision(TriangleMesh<3> &mesh)
 			if (edge_vtx_map.find(edge) == edge_vtx_map.end()){
 
 				/* your implementation for 1.(1) starts */
-				
+
+				new_vtx_pos = (new_vtx[edge[0]] + new_vtx[edge[1]]) * 0.5; // have to look up vertex index in old_vtx vector
+				new_vtx.push_back(new_vtx_pos);
+				new_vtx_idx = new_vtx.size() - 1;
 				
 				/* your implementation for 1.(1) ends */
 				
@@ -131,7 +146,10 @@ inline void LoopSubdivision(TriangleMesh<3> &mesh)
 		// Step 1.(2): You will add four new triangles to new_tri. Make sure all triangles follow a counterclockwise order.
 		
 		/* your implementation for 1.(2) starts */
-		
+		new_tri.push_back(Triangle(tri[0], tri_mid[0], tri_mid[2]));
+		new_tri.push_back(Triangle(tri_mid[0], tri[1], tri_mid[1]));
+		new_tri.push_back(Triangle(tri_mid[2], tri_mid[1], tri[2]));
+		new_tri.push_back(Triangle(tri_mid[0], tri_mid[1], tri_mid[2]));
 
 		/* your implementation for 1.(2) ends */
 	}
@@ -139,7 +157,7 @@ inline void LoopSubdivision(TriangleMesh<3> &mesh)
 	/////////////////////////////////////////////////////
 	// Step 2: Update odd vertex position
 	// You have three tasks for this step: 
-	// (1) Implement the FindTheOtherVertex() function to find the opposite vertex of a given edge in a trianlge; 
+	// (1) Implement the FindTheOtherVertex() function to find the opposite vertex of a given edge in a triangle; 
 	// (2) Implement the SmoothOddVtx() function to calculate the smoothed position of an odd vertex as .375*(A+B)+.125*(C+D), with A, B as the two incident vertices and C, D as the two opposite vertices
 	// (3) Call SmoothOddVtx() in the for-loop to update each odd vertex's position.
 	/////////////////////////////////////////////////////
@@ -176,11 +194,10 @@ inline void LoopSubdivision(TriangleMesh<3> &mesh)
 		int p3 = FindTheOtherVertex(old_tri[edge_inc_tris[1]], p0, p1); // find the opposite vertice p3
 
 		// Step 2.(2): implement the function SmoothOddVtx() (see function declared above)
-
+		Vertex smoothed_vtx = SmoothOddVtx(old_vtx, p0, p1, p2, p3);
 		// Step 2.(3): call SmoothOddVtx() to calculate the new position for each odd vertex
-
 		/* your implementation for 2.(3) starts */
-
+		new_vtx[v] = smoothed_vtx;
 		
 		/* your implementation for 2.(3) ends */
 	}
@@ -212,11 +229,11 @@ inline void LoopSubdivision(TriangleMesh<3> &mesh)
 		const std::vector<int> &nbs = iter.second;			  	// get the array of its incident vertex indicies
 		
 		// Step 3.(1) implement the function SmoothEvenVtx() (see function declared above)
-		
+		Vertex smoothed_vtx = SmoothEvenVtx(old_vtx, v, nbs);
 		// Step 3.(2) call SmoothEvenVtx() to calculate the new position for each even vertex
 
 		/* your implementation for 3.(2) starts */
-		
+		new_vtx[v] = smoothed_vtx;
 		/* your implementation for 3.(2) ends */
 	}
 
