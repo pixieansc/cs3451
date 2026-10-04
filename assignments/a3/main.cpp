@@ -54,8 +54,8 @@ public:
 		Create_Background(OpenGLColor(0.71f, 0.6f, 0.17f, 1.f), OpenGLColor(0.71f, 0.87f, 0.17f, 1.f));
 		OpenGLShaderLibrary::Instance()->Add_Shader_From_File("a3_vert.vert", "a3_frag.frag", "a3_shading");	////bind shader for this assignment
 
-		Create_Angry_Bird_Palace();					////TODO: Comment this line when you start to implement your customized scene
-		//// Create_Angry_Bird_Garden();			////TODO: Uncomment this line when you start to implement your customized scene
+		// Create_Angry_Bird_Palace();					////TODO: Comment this line when you start to implement your customized scene
+		Create_Angry_Bird_Garden();			////TODO: Uncomment this line when you start to implement your customized scene
 
 	}
 
@@ -81,9 +81,9 @@ public:
 		auto castle = Add_Obj_Mesh_Object_From_File("castle.obj", OpenGLColor(.6f, .6f, .6f, 1.f));
 		{
 			Matrix4f t;
-			t << 1., 0., 0., 0.,
-				0., 1., 0., 0.,
-				0., 0., 1., 0.,
+			t << 0., 0., 5., 0.,
+				0., 5., 0., 1.3f,
+				-5., 0., 0., 0.,
 				0., 0., 0., 1.;
 
 			castle->Set_Model_Matrix(t);
@@ -138,11 +138,14 @@ public:
 		int tree_num = 24;
 		for (int i = 0; i < tree_num; i++) {
 			auto tree = Add_Obj_Mesh_Object_From_File("tree1.obj", OpenGLColor(0.f, 1.f, 0.f, 1.f));
+
+			float radian = i * (2 * M_PI / 24);
+
 			{
 				Matrix4f t;
-				t << 1., 0., 0., 0.,
-					0., 1., 0., 0.,
-					0., 0., 1., 0.,
+				t << cos(radian), 0., sin(radian), 8. * cos(radian),
+					0., 1., 0., 0.5f,
+					-sin(radian), 0., cos(radian), -8. * sin(radian),
 					0., 0., 0., 1.;
 				tree->Set_Model_Matrix(t);
 			}
@@ -159,11 +162,14 @@ public:
 		int tree2_num = 36;
 		for (int i = 0; i < tree2_num; i++) {
 			auto tree = Add_Obj_Mesh_Object_From_File("tree2.obj", OpenGLColor(0.f, 1.f, 0.f, 1.f));
+
+			float radian = i * (2 * M_PI / 36);
+
 			{
 				Matrix4f t;
-				t << 1., 0., 0., 0.,
-					0., 1., 0., 0.,
-					0., 0., 1., 0.,
+				t << cos(radian), 0., sin(radian), 10. * cos(radian),
+					0., 1., 0., 0.5f,
+					-sin(radian), 0., cos(radian), -10. * sin(radian),
 					0., 0., 0., 1.;
 				tree->Set_Model_Matrix(t);
 			}
@@ -182,17 +188,17 @@ public:
 			{
 				Matrix4f t;
 				t << 1., 0., 0., 0.,
-					0., 1., 0., 0.,
-					0., 0., 1., 0.,
+					0., 0.1f, 0., 0.,
+					0., 0., 0.5f, 3 + i,
 					0., 0., 0., 1.;
 				cube1->Set_Model_Matrix(t);
 			}
 		}
 		/* Your implementation ends. */
 
-		//// Step 7: add 6 keyframes of a throwing angry bird following a parabola.
-		//// The angry bird is thrown from (-5, 0, 0) with initial velocity (5, 9.8, 0) (unit/sec)
-		//// Its angular velocity omega = 150 (deg/sec) *clockwise* 		 
+		// Step 7: add 6 keyframes of a throwing angry bird following a parabola.
+		// The angry bird is thrown from (-5, 0, 0) with initial velocity (5, 9.8, 0) (unit/sec)
+		// Its angular velocity omega = 150 (deg/sec) *clockwise* 		 
 		//// The gravity is g = 9.8 (unit/sec) in negative y direction
 		//// The x coordinate of the bird can be calculated as x = x0 + ux * t
 		//// The y coordinate of the bird can be calculated as y = uy * t - 0.5 * g * t * t
@@ -206,18 +212,23 @@ public:
 		/* Your implementation starts. You may add/remove/edit any part of the code in the following. */
 		std::vector<float> time = { 0.2, 0.5, 0.8, 1.1, 1.4, 1.7 };
 		int bird_num = 6;
+
 		for (int i = 0; i < bird_num; i++) {
 			auto bird = Add_Obj_Mesh_Object_From_File("bird.obj", OpenGLColor(1.f, 0.2f, 0.f, 1.f));
+
+			float radian = -150.0f * time[i] * (M_PI / 180.0f);
 			{
 				Matrix4f t;
-				t << 1., 0., 0., 0.,
-					0., 1., 0., 0.,
+				t << cos(radian), -sin(radian), 0., -5 + 5 * time[i],
+					sin(radian), cos(radian), 0., 9.8f * time[i] - 4.9f * (time[i] * time[i]),
 					0., 0., 1., 0.,
 					0., 0., 0., 1.;
 				bird->Set_Model_Matrix(t);
 			}
 		}
 		/* Your implementation ends. */
+
+
 	}
 
 	//// Step 8: Create a new garden scene by using the mesh objects we provided, or download your own from online resources. 
@@ -235,6 +246,84 @@ public:
 		//// draw the ground, comment them out if you don't need them
 		Add_Ground();
 
+		int tree_num = 42;
+		for (int i = 0; i < tree_num; i++) {
+			auto tree = Add_Obj_Mesh_Object_From_File("tree1.obj", OpenGLColor(0.f, 1.f, 0.f, 1.f));
+
+			float radian = i * (2 * M_PI / 24);
+
+			{
+				Matrix4f t;
+				t << cos(radian), 0., sin(radian), 8. * cos(radian),
+					0., 1., 0., 0.5f,
+					-sin(radian), 0., cos(radian), -8. * sin(radian),
+					0., 0., 0., 1.;
+				tree->Set_Model_Matrix(t);
+			}
+		}
+		/* Your implementation ends. */
+
+		//// Step 5: add 36 trees by reading the model from "tree2.obj" 
+		//// The 36 trees need to be distributed evenly and at equal distances along the circumference of the outer circle. 
+		//// The circle has its center at the origin and a radius of 10.
+		//// Each tree needs to be translated in the positive y axis by 0.5 unit to ensure its base is above the ground.
+		//// Calculate the transform matrix for each tree in the following for-loop.
+
+		/* Your implementation starts. You may add/remove/edit any part of the code in the following. */
+		int tree2_num = 64;
+		for (int i = 0; i < tree2_num; i++) {
+			auto tree = Add_Obj_Mesh_Object_From_File("tree2.obj", OpenGLColor(0.f, 1.f, 0.f, 1.f));
+
+			float radian = i * (2 * M_PI / 36);
+
+			{
+				Matrix4f t;
+				t << cos(radian), 0., sin(radian), 10. * cos(radian),
+					0., 1., 0., 0.5f,
+					-sin(radian), 0., cos(radian), -10. * sin(radian),
+					0., 0., 0., 1.;
+				tree->Set_Model_Matrix(t);
+			}
+		}
+		
+		auto castle = Add_Obj_Mesh_Object_From_File("castle.obj", OpenGLColor(0.93f, 0.74f, 0.015f, 1.f));
+		{
+			Matrix4f t;
+			t << 0., 0., 7., 0.,
+				0., 7., 0., 1.3f,
+				-7., 0., 0., 0.,
+				0., 0., 0., 1.;
+
+			castle->Set_Model_Matrix(t);
+		}
+
+		// red bird
+		auto red_bird = Add_Obj_Mesh_Object_From_File("bird.obj", OpenGLColor(1.f, 0.f, 0.f, 1.f));
+        {
+			float radian = 45 * (M_PI / 180);
+
+            Matrix4f t_red;
+            // Combines: Translation(X=-5, Y=5) * Rotation_Y(-45) * Scale(5)
+            t_red << 5 * cos(radian),  0., 5 * sin(radian), -5,
+                     0., 5., 0., 5.,
+                    -5 * sin(radian),  0., 5 * cos(radian),  0.,
+                     0., 0., 0., 1.;
+            red_bird->Set_Model_Matrix(t_red);
+        }
+
+        // blue bird
+        auto blue_bird = Add_Obj_Mesh_Object_From_File("bird.obj", OpenGLColor(0.f, 0.f, 1.f, 1.f));
+        {
+			float radian = -45 * (M_PI / 180);
+
+            Matrix4f t_blue;
+            // Combines: Translation(X=-5, Y=5) * Rotation_Y(-45) * Scale(5)
+            t_blue << 5 * cos(radian),  0., 5 * sin(radian), 5,
+                     0., 5., 0., 5.,
+                    -5 * sin(radian),  0., 5 * cos(radian),  0.,
+                     0., 0., 0., 1.;
+            blue_bird->Set_Model_Matrix(t_blue);
+        }
 		/* Your implementation ends. */
 	}
 
