@@ -1,4 +1,4 @@
-// #define Terrain 1		/* Uncomment this macro for Step II */
+#define Terrain 1		/* Uncomment this macro for Step II */
 
 struct Light 
 {
@@ -32,11 +32,11 @@ vec2 hash2(vec2 v)
 	// rand  = 52.5 * fract(v.yx * 0.31 + vec2(0.31, 0.113));
     // rand = -1.0 + 3.1 * fract(rand.x * rand.y * rand.yx);
 	
-	rand = -1.0 + 2.0 * fract(sin(v.yx) * 5236.273 + vec2(0.52, 0.25))
+	rand = -1.0 + 2.0 * fract(v.yx * 0.65 + vec2(0.52, 0.25));
 
 	/* Your implementation ends */
 
-	return rand;
+	return normalize(rand);
 }
 
 /////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ float perlin_noise(vec2 p)
     vec2 f = fract(p);
 	
 	/* Your implementation starts */
-    vec2 smooth = smoothstep(0.0, 1.0, f) // smoothed out value for point p
+    vec2 S = smoothstep(0.0, 1.0, f); // smoothed out value for point p
 
 	vec2 g00 = hash2(i);
     vec2 g10 = hash2(i + vec2(1.0, 0.0));
@@ -94,7 +94,8 @@ float noise_octave(vec2 p, int num)
 	
 	/* Your implementation starts */
 	for (int i = 0; i < num; i++) {
-		sum += 2^(-1 * i) * perlin_noise(2^i * p);
+		float exponent = float(i);
+		sum += pow(0.5, exponent) * perlin_noise(pow(2, exponent) * p);
 	}
 	
 	/* Your implementation ends */
@@ -122,6 +123,9 @@ float height(vec2 v)
 	// h = 0.75 * noise_octave(v, 10);
 	// if(h<0) h *= .5;
 	
+	h = 1.7 * noise_octave(v, 10);
+	if (h < 0) h *= 0.25;
+
 	/* Your implementation ends */
 	
 	return h;
@@ -139,8 +143,15 @@ vec3 compute_normal(vec2 v, float d)
 {	
 	vec3 normal_vector = vec3(0,0,0);
 	
-	/* Your implementation starts */
-
+	vec3 v1 = vec3(v.x + d, v.y, height(vec2(v.x + d, v.y)));
+    vec3 v2 = vec3(v.x - d, v.y, height(vec2(v.x - d, v.y)));
+    vec3 v3 = vec3(v.x, v.y + d, height(vec2(v.x, v.y + d)));
+    vec3 v4 = vec3(v.x, v.y - d, height(vec2(v.x, v.y - d)));
+    
+    vec3 v12 = v1 - v2;
+    vec3 v34 = v3 - v4;
+    
+    normal_vector = normalize(cross(v12, v34));
 	
 	/* Your implementation ends */
 	
@@ -169,7 +180,21 @@ vec4 shading_phong(Light light, vec3 e, vec3 p, vec3 s, vec3 n)
 	vec4 color=vec4(0.0,0.0,0.0,1.0);
 	
     /* your implementation starts */
+        
     
+    vec3 L = normalize(s - p); // vector from surface point to light source
+    vec3 V = normalize(e - p); // vector from surface point to eye
+    
+    vec3 R = reflect(-L, n);
+    
+    vec3 ambient = ka * light.Ia;
+    
+    vec3 diffuse = kd * light.Id * max(dot(L, n), 0.0);
+    
+    vec3 specular = ks * light.Is * pow(max(dot(V, R), 0.0), shininess);
+    
+    vec3 result = ambient + diffuse + specular;
+    color = vec4(result, 1.0);
     
 	/* your implementation ends */
 	
@@ -193,6 +218,10 @@ vec3 shading_noise(vec3 p)
 vec3 shading_terrain(vec3 pos) 
 {
 	const Light light = Light(vec3(3, 1, 3), vec3(1, 1, 1), vec3(2, 2, 2), vec3(1, 1, 1));
+	const Light back_light = Light(vec3(-3, 1, -1), vec3(0.02, 0.02, 0.02), vec3(0.2, 0.38, 0.66), vec3(0, 0, 0));
+	
+	const Light front_light = Light(vec3(3, 1, -3), vec3(0.01, 0.02, 0.02), vec3(0.6, 0.6, 0.66), vec3(0, 0, 0));
+
 
 	//// calculate Phong shading color with normal
 	
@@ -200,7 +229,15 @@ vec3 shading_terrain(vec3 pos)
 	vec3 e = position.xyz;
 	vec3 p = pos.xyz;
 	vec3 s = light.position;
-	vec3 phong_color = shading_phong(light, e, p, s, n).xyz;
+	
+	vec3 main_color = shading_phong(light, e, p, s, n).xyz;
+
+	// add back lighting
+	vec3 fill_color = shading_phong(back_light, e, p, back_light.position, n).xyz;
+	// add front lighting
+	vec3 front_color = shading_phong(front_light, e, p, front_light.position, n).xyz;
+
+	vec3 phong_color = min(main_color + fill_color + front_color, vec3(1.0));
 
 	//// calculate emissive color
 	vec3 emissive_color = vec3(0.0,0.0,0.0);
@@ -212,6 +249,12 @@ vec3 shading_terrain(vec3 pos)
 	// h = clamp(h, 0.0, 1.0);
 	// emissive_color = mix(vec3(.4,.6,.2), vec3(.4,.3,.2), h);
 
+	vec3 depth_color = vec3(0.6, 0.8, 1.0);  // Icy light blue
+    vec3 peak_color = vec3(1.0, 1.0, 1.0);   // Pure white
+    
+    float elevation = smoothstep(-0.2, 0.36, pos.z);
+    
+    emissive_color = mix(depth_color, peak_color, elevation);
 	/* your implementation ends */
 
 	return phong_color * emissive_color;
