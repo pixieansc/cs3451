@@ -92,14 +92,33 @@ public:
 
         //// Step 5: Add your customized mesh objects and specify their transform, material, and texture properties by mimicking Create_Bunny_Scene() 
         /* Your implementation starts */
+        { auto spot1 = Add_Obj_Mesh_Object("spot_triangulated.obj");
+            spot1->name = "spot1";
+
+            Matrix4f t;
+            t << 1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1;
+            spot1->Set_Model_Matrix(t);
+
+            spot1->Set_Ka(Vector3f(0.1, 0.1, 0.1));
+            spot1->Set_Kd(Vector3f(0.7, 0.7, 0.7));
+            spot1->Set_Ks(Vector3f(2., 2., 2.));
+            spot1->Set_Shininess(128.);
+
+            Add_Textture_For_Mesh_Object(spot1, "spot_texture.png", TexType::Color);
+            Add_Textture_For_Mesh_Object(spot1, "bunny_normal.png", TexType::Normal);
+        }
+
 
         /* Your implementation ends */
     }
 
     virtual void Initialize_Data() 
     {
-        Create_Bunny_Scene();           //// TODO: comment out this line for your customized scene
-        // Create_Old_Object_Scene();   //// TODO: uncomment this line for your customized scene
+        // Create_Bunny_Scene();           //// TODO: comment out this line for your customized scene
+        Create_Old_Object_Scene();   //// TODO: uncomment this line for your customized scene
 
         ////initialize shader
         OpenGLShaderLibrary::Instance()->Add_Shader_From_File("a5_vert.vert", "a5_frag.frag", "a5_shader");

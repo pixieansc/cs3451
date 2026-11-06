@@ -1,4 +1,7 @@
 #version 330 core
+#define SHADE(x) ((x + 1)/2)
+#define RBG(x) (x/255.0)
+
 
 /* default camera matrices (do not modify) */
 layout(std140) uniform camera {
@@ -45,9 +48,9 @@ vec4 shading_normal()
 {
     vec3 _normal = normalize(vtx_normal);
     
-    /* your implementation starts */
+    vec4 shaded = vec4(SHADE(_normal.x), SHADE(_normal.y), SHADE(_normal.z), 1);
 
-    return vec4(0.f,0.f,0.f,1.f);
+    return shaded;
     /* your implementation ends */
 }
 
@@ -66,7 +69,9 @@ vec4 shading_ambient(Light light)
 {
     /* your implementation starts */
     
-    return vec4(0.f,0.f,0.f,1.f);
+    vec3 La = light.Ia * ka;
+
+    return vec4(La, 1.f);
     /* your implementation ends */
 }
 
@@ -88,7 +93,11 @@ vec4 shading_lambertian(Light light, vec3 p, vec3 s, vec3 n)
 {
     /* your implementation starts */
 
-    return vec4(0.f,0.f,0.f,1.f);
+    vec3 l = normalize(light.position - p); // unit light vector
+    vec3 lambertian = light.Id * kd * max(0, dot(l, n));
+    vec3 ambient = vec3(shading_ambient(light));
+
+    return vec4(ambient + lambertian, 1.f);
     /* your implementation ends */
 }
 
@@ -110,8 +119,13 @@ vec4 shading_lambertian(Light light, vec3 p, vec3 s, vec3 n)
 vec4 shading_phong(Light light, vec3 e, vec3 p, vec3 s, vec3 n) 
 {
     /* your implementation starts */
-    
-    return vec4(0.f,0.f,0.f,1.f);
+    vec3 diffuse = vec3(shading_lambertian(light, p, s, n));
+    vec3 eye = normalize(e - p);
+    vec3 r = normalize(reflect(p - light.position, n));
+
+    vec3 highlight = light.Is * ks * pow(max(0, dot(eye, r)), shininess);
+
+    return vec4(diffuse + highlight, 1.f);
     /* your implementation ends */
 }
 
@@ -132,8 +146,8 @@ Light get_spinny_light(Light light)
     /* your implementation starts */
 
     mat4 light_model_mtx = 
-        mat4(1., 0., 0., 0., 
-             0., 1., 0., 0., 
+        mat4(cos(theta), sin(theta), 0., 0., 
+             -sin(theta), cos(theta), 0., 0., 
              0., 0., 1., 0., 
              0., 0., 0., 1.);
     
@@ -150,6 +164,22 @@ void main()
                                 /*Id*/ vec3(1.0, 1.0, 1.0), 
                                 /*Is*/ vec3(0.5, 0.5, 0.5));
 
+    const Light light2 = Light(/*position*/ vec3(1, 2, -0.5), 
+                                /*Ia*/ vec3(0.1, 0.05, 0.2),  
+                                /*Id*/ vec3(0.15, 0.1, 0.25), 
+                                /*Is*/ vec3(0.1, 0.1, 0.1));
+
+
+    const Light light = Light(/*position*/ vec3(-0.5, 1, 2), 
+                                /*Ia*/ vec3(0.3, 0.3, 0.3), 
+                                /*Id*/ vec3(RBG(255), RBG(215), RBG(110)), 
+                                /*Is*/ vec3(0.8, 0.7, 0.5));
+
+    // const Light light3 = Light(/*position*/ vec3(0, -1, -2), 
+    //                             /*Ia*/ vec3(0.1, 0.1, 0.1), 
+    //                             /*Id*/ vec3(RBG(255), RBG(215), RBG(110)), 
+    //                             /*Is*/ vec3(0.8, 0.7, 0.5));
+
     //// variables that you may find useful for your implementation
     vec3 n = normalize(vtx_normal);     //// normal vector
     vec3 e = position.xyz;              //// eye position
@@ -159,7 +189,7 @@ void main()
     //// Step 1: visualize normal vectors as colors
     //// Your task is to implement the shading_normal function
 
-    frag_color = shading_normal();
+    // frag_color = shading_normal();
 
     //// Step 2: ambient shading
     //// Your task is to implement the shading_normal function 
@@ -193,6 +223,7 @@ void main()
     
     
     // frag_color = shading_phong(light1, e, p, s1, n);
+    // frag_color += shading_phong(light2, e, p, light2.position, n);
     
     /* Your implementation ends here */
 
@@ -201,8 +232,8 @@ void main()
     //// Your implementation will take place in the function get_spinny_light
     //// After implementing rotation in get_spinny_light, uncomment the following two lines and press key 'p' to start the animation
     
-    // Light spinnyLight = get_spinny_light(light1);
-    // frag_color = shading_phong(spinnyLight, e, p, spinnyLight.position, n);
+    Light spinnyLight = get_spinny_light(light1);
+    frag_color = shading_phong(spinnyLight, e, p, spinnyLight.position, n);
 
     //// Step 7: your customized lighting effect
     //// Implement your customized lighting effects on your customized mesh objects 
@@ -210,5 +241,6 @@ void main()
     //// Here we provide the phong shading model as the default implementation
     //// Customize it with your own lighting model
 
-    // frag_color = shading_phong(light1, e, p, s1, n);
+    // frag_color = shading_phong(light, e, p, light.position, n);
+    // frag_color += shading_phong(light2, e, p, light2.position, n);
 }

@@ -23,6 +23,8 @@
 #define CLOCKS_PER_SEC 100000
 #endif
 
+#define RBG(x) (x/255.0)
+
 class ShaderDriver : public OpenGLViewer {
     std::vector<OpenGLTriangleMesh*> mesh_object_array;
     clock_t startTime;
@@ -77,19 +79,45 @@ public:
 
     void Create_Shining_Scene()
     {
-        Create_Background(OpenGLColor(0.1f, 0.1f, 0.1f, 1.f), OpenGLColor(0.1f, 0.1f, .3f, 1.f));   //// add background
+        Create_Background(OpenGLColor(RBG(242), RBG(112), RBG(89), 1.f), OpenGLColor(RBG(247), RBG(157), RBG(101), 1.f));   //// add background
 
-        //// Step 7: Add your customized mesh objects and specify their transform and material properties by mimicking Create_Bunny_Scene() 
-        /* Your implementation starts */
+        // step 7 !!
 
-        /* Your implementation ends */
+        auto city = Add_Obj_Mesh_Object("city_triangulated.obj");
+
+        Matrix4f c;
+        c << 5., 0., 0., -2,
+            0., 5., 0., -1,
+            0., 0., 5., 2,
+            0., 0., 0., 1.;
+        city->Set_Model_Matrix(c);
+
+        city->Set_Ka(Vector3f(RBG(156), RBG(107), RBG(181)));    
+        city->Set_Kd(Vector3f(RBG(244), RBG(132), RBG(95)));  // Your original warm pink/orange base
+        city->Set_Ks(Vector3f(RBG(255), RBG(230), RBG(180)));
+        city->Set_Shininess(35.f);
+
+        auto grass = Add_Obj_Mesh_Object("groundplane.obj");
+
+        Matrix4f g;
+        g << 10., 0., 0., 0,
+            0., 10., 0., -1,
+            0., 0., 10., 0,
+            0., 0., 0., 1.;
+        grass->Set_Model_Matrix(g);
+
+        grass->Set_Ka(Vector3f(RBG(155), RBG(212), RBG(195)));
+        grass->Set_Kd(Vector3f(RBG(155), RBG(212), RBG(195)));
+        grass->Set_Ks(Vector3f(RBG(50), RBG(50), RBG(50)));
+        grass->Set_Shininess(1.f);
+
     }
 
     //// Step 7: Comment out Create_Bunny_Scene() and uncomment Create_Shining_Scene() for your customized scene.
     virtual void Initialize_Data()
     {
         Create_Bunny_Scene();               //// TODO: comment out this line for your customized scene
-        //Create_Shining_Scene();           //// TODO: uncomment this line for your customized scene
+        // Create_Shining_Scene();           //// TODO: uncomment this line for your customized scene
 
         OpenGLShaderLibrary::Instance()->Add_Shader_From_File("a4_vert.vert", "a4_frag.frag", "a4_shader");
         for (auto& mesh_obj : mesh_object_array) {
