@@ -38,10 +38,20 @@ public:
         screen_cover = Add_Interactive_Object<OpenGLScreenCover>();
         Set_Polygon_Mode(screen_cover, PolygonMode::Fill);
         Uniform_Update();
-        // Add texture
+
+        // Add textures
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("floor.jpg", "floor_color");
         screen_cover->Add_Texture("floor_color", OpenGLTextureLibrary::Get_Texture("floor_color"));
         
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("stripes.jpg", "ball_color1");
+        screen_cover->Add_Texture("ball_color1", OpenGLTextureLibrary::Get_Texture("ball_color1"));
+
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("snowflake.jpg", "ball_color2");
+        screen_cover->Add_Texture("ball_color2", OpenGLTextureLibrary::Get_Texture("ball_color2"));
+
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("gold.jpg", "ball_color3");
+        screen_cover->Add_Texture("ball_color3", OpenGLTextureLibrary::Get_Texture("ball_color3"));
+
         screen_cover->use_tex = true;
         screen_cover->Set_Data_Refreshed();
         screen_cover->Initialize();

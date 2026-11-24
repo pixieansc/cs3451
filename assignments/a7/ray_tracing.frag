@@ -8,6 +8,10 @@ out vec4 fragColor;
 
 uniform sampler2D bufferTexture;
 uniform sampler2D floor_color;
+uniform sampler2D ball_color1;
+uniform sampler2D ball_color2;
+uniform sampler2D ball_color3;
+
 
 #define M_PI 3.1415925585
 #define Epsilon 1e-6
@@ -138,7 +142,7 @@ void initScene()
 
     //// Sphere 0 Material
     materials[1].ka = vec3(0.1);
-    materials[1].kd = vec3(0.8, 0.2, 0.2);
+    materials[1].kd = vec3(1.0);
     materials[1].ks = vec3(0.8);
     materials[1].shininess = 128;
     materials[1].kr = 0.5 * materials[1].ks;
@@ -152,7 +156,7 @@ void initScene()
 
     //// Sphere 2 Material
     materials[3].ka = vec3(0.2);
-    materials[3].kd = vec3(0.2, 0.2, 0.9);
+    materials[3].kd = vec3(0, 0.2, 0.9);
     materials[3].ks = vec3(0.8);
     materials[3].shininess = 128;
     materials[3].kr = 0.5 * materials[3].ks;
@@ -191,15 +195,15 @@ Hit hitPlane(const Ray r, const Plane pl)
     
     //// uncomment the following lines and run the code
 
-    // float t = dot(pl.p - r.ori, pl.n) / dot(r.dir, pl.n);
+    float t = dot(pl.p - r.ori, pl.n) / dot(r.dir, pl.n);
 
-    // if(t <= 0.0) 
-    //    return noHit;
+    if(t <= 0.0) 
+       return noHit;
 
-    // vec3 hitP = r.ori + t * r.dir;
-    // vec3 normal = pl.n;
+    vec3 hitP = r.ori + t * r.dir;
+    vec3 normal = pl.n;
 
-    // hit = Hit(t, hitP, normal, pl.matId);
+    hit = Hit(t, hitP, normal, pl.matId);
 
     /* default implementation ends */
     
@@ -220,6 +224,27 @@ Hit hitSphere(const Ray r, const Sphere s)
     Hit hit = noHit;
 	
     /* your implementation starts */
+    float A = dot(r.dir, r.dir); // d^2
+
+    vec3 l = s.ori - r.ori;
+
+    float B = -2 * dot(l, r.dir);
+    float C = dot(l, l) - s.r * s.r; // l^2 - r^2
+
+    float discriminant = (B * B) - 4.0 * A * C; 
+    if (discriminant < 0.0) {
+        return noHit; // discriminant is negative (no roots)
+    }
+
+    float t = (-B - sqrt(discriminant)) / (2 * A); // quadratic formula
+    if (t < 0.0) {
+        return noHit; 
+    }
+
+    vec3 point = r.ori + t * r.dir; // plug back into r(t)
+    vec3 normal = (point - s.ori) / length(point - s.ori); // normal vector
+
+    hit = Hit(t, point, normal, s.matId);
 
 	/* your implementation ends */
     
@@ -265,12 +290,16 @@ vec3 shadingPhong(Light light, int matId, vec3 e, vec3 p, vec3 s, vec3 n)
     vec3 color = matId == 0 ? vec3(0.2, 0, 0) : vec3(0, 0, 0.3);
 
     vec3 ka = materials[matId].ka;
-    vec3 kd = materials[matId].kd;
+    vec3 kd = sampleDiffuse(matId, p);
     vec3 ks = materials[matId].ks;
     float shininess = materials[matId].shininess;
     
     /* your implementation starts */
-	
+	vec3 l = normalize(s - p);
+    vec3 v = normalize(p - e);
+    vec3 r = reflect(-l, n);
+
+    color = ka * light.Ia + kd * light.Id * max(0, dot(l, n)) + ks * light.Is * pow(max(0, dot(v, n)), shininess);
 	/* your implementation ends */
     
 	return color;
@@ -289,12 +318,24 @@ vec3 sampleDiffuse(int matId, vec3 p)
 
     /* apply texture for the ground */
     if(matId == 0) {		
-		vec2 uv = vec2(p.x, p.z) / 5.0;     /* uv texture on the ground */
+		vec2 uv = vec2(p.x, p.z) / 15 + 0.5;     /* uv texture on the ground */
 
         /* your implementation starts */
-        
-        
+        color = texture(floor_color, uv).rgb * mat_color;
 		/* your implementation ends */
+    } else{
+        vec3 d = normalize(p - spheres[matId - 1].ori);
+        vec2 uv = vec2(0.5 + atan(d.z, d.x) / (2.0 * M_PI), 0.5 + asin(d.y) / M_PI);
+
+        if (matId == 1) {
+            color = texture(ball_color1, uv).rgb;
+        } else if (matId == 2) {
+            vec2 uv3 = clamp(d.xy * 0.5 + 0.5, 0.0, 1.0);
+            color = texture(ball_color3, uv3).rgb;
+        } else if (matId == 3) {
+            color = texture(ball_color2, uv / 1.2).rgb;
+        }
+
     }
 
     /* no texture for the spheres */
@@ -315,13 +356,18 @@ bool isShadowed(Light light, Hit h)
 {
     bool shadowed = false;                          /* returned boolean to indicate if there is shadow or not */
 	vec3 intersect = h.p;                           /* hit intersect */
-	vec3 toLight = light.position-intersect;        /* vector pointing from the shadow ray origin to the light */
+	vec3 toLight = light.position - intersect;      /* vector pointing from the shadow ray origin to the light */
 	float t_max = length(toLight);                  /* length of toLight */
 	vec3 dir = normalize(toLight);                  /* direction of toLight */
 	
     /* your implementation starts */
 	
-    
+    Ray shadow = Ray(intersect + Epsilon * dir, dir);
+    Hit isHit = findHit(shadow);
+
+    if (isHit.t > 0.0 && isHit.t < t_max) {
+        shadowed = true;
+    }
 	/* your implementation ends */
     
 	return shadowed;
@@ -372,7 +418,7 @@ vec3 rayTrace(in Ray r, out Hit hit)
 
 /* your implementation starts */
 
-const int recursiveDepth = 1;
+const int recursiveDepth = 50;
 
 /* your implementation ends */
 
@@ -412,7 +458,8 @@ void main()
         vec3 reflected_dir = vec3(0);           /* calculate the reflected dir */
 
 		/* your implementation starts */
-        
+        reflected_dir = normalize(reflect(incoming_dir, normal));
+        recursiveRay = Ray(intersect, reflected_dir);
 		/* your implementation ends */
     }
 	
